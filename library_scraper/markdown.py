@@ -20,13 +20,18 @@ def similarity(a, b):
 
 def getLinks(soup, url_processed):
     links = PriorityQueue()
-    for link in soup.findAll('a', attrs={'href': re.compile("^https?://")}):
+    for link in soup.findAll('a', attrs={'href': re.compile(".?")}):
         # print(link.get('href'))
         # print(similarity(url_processed, link.get('href')))
         priority = 2 - similarity(url_processed, link.get('href'))
         # give higher priorities to links that contain relevant keywords like "install"
-        if "install" in link or "documentation" in link:
-            priority -= 1
+        special_links = ['install','documentation', 'docs']
+        for special_link in special_links:
+            if link.contents and link.contents[0] is not None and isinstance(link.contents[0], str):
+                #print(link.contents[0])
+                if special_link in link.contents[0].lower():
+                    priority -= 1
+                    break
         links.put((priority, link.get('href')))
 
     return links
@@ -49,8 +54,10 @@ def getPackageName(url, depth=0, results_pq = PriorityQueue(), url_processed=Non
         print(url_processed)
 
     try:
-        response = requests.get(url).content
+        #print(requests.get(url).status_code)
+        response = requests.get(url, allow_redirects=True).content
     except Exception:
+        print('requests.get(url).content is null')
         return None
     #print(response)
     soup = BeautifulSoup(response, features="lxml")
@@ -148,21 +155,21 @@ if __name__ == '__main__':
     #getMarkdownPkgNames(my_dict)
 
     # standard case
-    assertCorrectPkgName("https://github.com/tylerlaberge/PyPattyrn", "pypattyrn")
-    # TODO -U case
-    assertCorrectPkgName("https://github.com/tylerlaberge/PyPattyrn", "pypattyrn")
-    # TODO -r red herring
-    assertCorrectPkgName("https://github.com/tylerlaberge/PyPattyrn", "pypattyrn")
-    # separate page starting at github
-    # TODO support more complicated commands such as 
-    # "sudo pip3 install ajenti-panel ajenti.plugin.core ajenti.plugin.dashboard ajenti.plugin.settings ajenti.plugin.plugins"
-    # assertCorrectPkgName("https://github.com/ajenti/ajenti", "pypattyrn")
-    # separate page
-    assertCorrectPkgName("https://twistedmatrix.com/trac/", "twisted")
-    # separate page with www
-    assertCorrectPkgName("http://www.pyqtgraph.org/", "pyqtgraph")
-    # separate page with totally different website name 
-    assertCorrectPkgName("https://www.crummy.com/software/BeautifulSoup/bs4/doc/", "beautifulsoup4")
+    # assertCorrectPkgName("https://github.com/tylerlaberge/PyPattyrn", "pypattyrn")
+    # # TODO -U case
+    # assertCorrectPkgName("https://github.com/tylerlaberge/PyPattyrn", "pypattyrn")
+    # # TODO -r red herring
+    # assertCorrectPkgName("https://github.com/tylerlaberge/PyPattyrn", "pypattyrn")
+    # # separate page starting at github
+    # # TODO support more complicated commands such as 
+    # # "sudo pip3 install ajenti-panel ajenti.plugin.core ajenti.plugin.dashboard ajenti.plugin.settings ajenti.plugin.plugins"
+    # # assertCorrectPkgName("https://github.com/ajenti/ajenti", "pypattyrn")
+    # # separate page
+    # assertCorrectPkgName("https://twistedmatrix.com/trac/", "twisted")
+    # # separate page with www
+    # assertCorrectPkgName("http://www.pyqtgraph.org/", "pyqtgraph")
+    # # separate page with totally different website name 
+    # assertCorrectPkgName("https://www.crummy.com/software/BeautifulSoup/bs4/doc/", "beautifulsoup4")
     # separate page with 2 clicks to get name
     assertCorrectPkgName("https://github.com/wooey/wooey", "wooey")
 
